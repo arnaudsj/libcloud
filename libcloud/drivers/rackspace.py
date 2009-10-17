@@ -183,6 +183,7 @@ class RackspaceNodeDriver(NodeDriver):
         n = Node(id=el.get('id'),
                  name=el.get('name'),
                  state=el.get('status'),
+                 password=el.get('adminPass'),
                  public_ip=public_ip,
                  private_ip=private_ip,
                  driver=self.connection.driver)
