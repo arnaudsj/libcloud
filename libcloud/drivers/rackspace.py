@@ -25,15 +25,39 @@ from xml.parsers.expat import ExpatError
 
 NAMESPACE = 'http://docs.rackspacecloud.com/servers/api/v1.0'
 
+class RackspaceSize(object):
+    RAM_256MB = '1'
+    RAM_512MB = '2'
+    RAM_1GB   = '3'
+    RAM_2GB   = '4'
+    RAM_4GB   = '5'
+    RAM_8GB   = '6'
+    RAM_16GB  = '7'
+
+class RackspaceImage(object):
+    CentOS_5_2 = '2'
+    Gentoo    = '3'
+    Debian_5_0  = '4'
+    Fedora_10 = '5'
+    CentOS_5_3 = '7'
+    Ubuntu_9_04 = '8'
+    Arch_2009_02  = '9'
+    Ubuntu_8_04 = '10'
+    Ubuntu_8_10 = '11' 
+    RedHat_5_3 = '12'
+    Fedora_11 = '13'
+
 class RackspaceResponse(Response):
 
     def success(self):
         i = int(self.status)
+        #print "response code:%s" % i
         return i >= 200 and i <= 299
 
     def parse_body(self):
         if not self.body:
             return None
+        #print self.body
         return ET.XML(self.body)
 
     def parse_error(self):
@@ -45,6 +69,19 @@ class RackspaceResponse(Response):
                                object.findall('error') ])
         except ExpatError:
             return self.body
+
+
+class RackSpaceNode(Node):
+    def __init__(self, id, name, state, public_ip, private_ip, driver, password=None, progress=None):
+        self.id = id
+        self.name = name
+        self.state = state
+        self.progress = progress
+        self.public_ip = public_ip
+        self.private_ip = private_ip
+        self.driver = driver
+        self.uuid = self.get_uuid()
+        self.password = password
 
 
 class RackspaceConnection(ConnectionUserAndKey):
@@ -127,11 +164,26 @@ class RackspaceNodeDriver(NodeDriver):
     def list_nodes(self):
         return self.to_nodes(self.connection.request('/servers/detail').object)
 
+    def get_node_details(self, node):
+        response = self.connection.request('/servers/%s'%(node.id))
+        #print response
+        return self._to_node(response.object)
+
     def list_sizes(self):
         return self.to_sizes(self.connection.request('/flavors/detail').object)
 
+    def get_size(self, size):
+        for s in self.list_sizes():
+            if s.id == size:
+                return s
+
     def list_images(self):
         return self.to_images(self.connection.request('/images/detail').object)
+
+    def get_image(self, image):
+        for i in self.list_images():
+            if i.id == image:
+                return i
 
     def create_node(self, name, image, size, **kwargs):
         body = """<server   xmlns="%s"
@@ -180,9 +232,10 @@ class RackspaceNodeDriver(NodeDriver):
                                           'addresses/public/ip'))
         private_ip = get_ips(self._findall(el, 
                                           'addresses/private/ip'))
-        n = Node(id=el.get('id'),
+        n = RackSpaceNode(id=el.get('id'),
                  name=el.get('name'),
                  state=el.get('status'),
+                 progress=el.get('progress'),
                  password=el.get('adminPass'),
                  public_ip=public_ip,
                  private_ip=private_ip,
