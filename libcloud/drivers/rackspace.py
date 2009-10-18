@@ -165,25 +165,23 @@ class RackspaceNodeDriver(NodeDriver):
         return self.to_nodes(self.connection.request('/servers/detail').object)
 
     def get_node_details(self, node):
+        #TODO: create test for this new method
         response = self.connection.request('/servers/%s'%(node.id))
-        #print response
         return self._to_node(response.object)
 
     def list_sizes(self):
         return self.to_sizes(self.connection.request('/flavors/detail').object)
 
     def get_size(self, size):
-        for s in self.list_sizes():
-            if s.id == size:
-                return s
+        #TODO: create test for this new method
+        return [s for s in self.list_sizes() if s.id == size][0]
 
     def list_images(self):
         return self.to_images(self.connection.request('/images/detail').object)
 
     def get_image(self, image):
-        for i in self.list_images():
-            if i.id == image:
-                return i
+        #TODO: create test for this new method
+        return [i for i in self.list_images() if i.id == image][0]
 
     def create_node(self, name, image, size, **kwargs):
         body = """<server   xmlns="%s"
